@@ -118,6 +118,7 @@
           @click:event="showEvent"
           @click:more="viewDay"
           @click:date="viewDay"
+          @click:day="dayClicked"
           @change="updateRange"
         ></v-calendar>
         <v-menu
@@ -149,6 +150,10 @@
             </v-toolbar>
             <v-card-text>
               <span v-html="selectedEvent.details"></span>
+              <div> 
+                Friends: {{selectedEvent.friends}}
+
+              </div>
             </v-card-text>
             <v-card-actions>
               <v-btn
@@ -163,6 +168,101 @@
         </v-menu>
       </v-sheet>
     </v-col>
+    <v-dialog
+      v-model="createEventDialog"
+      persistent
+      max-width="600px"
+    >
+      <v-card>
+        <v-card-title>
+          <span class="text-h5">Create event on {{currentDayInfo}} </span>
+        </v-card-title>
+        <v-card-text>
+          <v-container>
+            <v-row>
+              <v-col
+      cols="12"
+      sm="6"
+      md="4"
+    >
+      <v-menu
+        ref="menu"
+        v-model="menu"
+        :close-on-content-click="false"
+        :return-value.sync="currentDayInfo"
+        transition="scale-transition"
+        offset-y
+        min-width="auto"
+      >
+        <template v-slot:activator="{ on, attrs }">
+          <v-text-field
+            v-model="currentDayInfo"
+            label="Picker in menu"
+            prepend-icon="mdi-calendar"
+            readonly
+            v-bind="attrs"
+            v-on="on"
+          ></v-text-field>
+        </template>
+        <v-date-picker
+          v-model="currentDayInfo"
+          no-title
+          scrollable
+        >
+          <v-spacer></v-spacer>
+          <v-btn
+            text
+            color="primary"
+            @click="menu = false"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            text
+            color="primary"
+            @click="$refs.menu.save(currentDayInfo)"
+          >
+            OK
+          </v-btn>
+        </v-date-picker>
+      </v-menu>
+    </v-col>
+              <v-col
+                cols="12"
+                sm="6"
+                md="4"
+              >
+                <v-text-field
+                  label=""
+                  required
+                ></v-text-field>
+              </v-col>
+            </v-row>
+          </v-container>
+          <small>*indicates required field</small>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="blue darken-1"
+            text
+            @click="createEventDialog = false"
+          >
+            Close
+          </v-btn>
+          <v-btn
+            color="blue darken-1"
+            text
+            @click="createEventDialog = false"
+          >
+            Save
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+
+
   </v-row>
 </v-container>
     <!-- <v-main>
@@ -174,6 +274,9 @@
 <script>
   export default {
     data: () => ({
+      menu: false,
+      currentDayInfo:"",
+      createEventDialog: false,
       focus: '',
       type: 'month',
       typeToLabel: {
@@ -193,6 +296,13 @@
       this.$refs.calendar.checkChange()
     },
     methods: {
+      dayClicked(e) {
+        this.createEventDialog = true
+        console.log(e)
+        this.currentDayInfo = e.date
+        
+      },
+
       viewDay ({ date }) {
         this.focus = date
         this.type = 'day'
@@ -210,49 +320,36 @@
         this.$refs.calendar.next()
       },
       showEvent ({ nativeEvent, event }) {
-        const open = () => {
-          this.selectedEvent = event
-          this.selectedElement = nativeEvent.target
-          requestAnimationFrame(() => requestAnimationFrame(() => this.selectedOpen = true))
-        }
 
         if (this.selectedOpen) {
           this.selectedOpen = false
-          requestAnimationFrame(() => requestAnimationFrame(() => open()))
+          
         } else {
-          open()
+          this.selectedEvent = event
+          this.selectedElement = nativeEvent.target
+          this.selectedOpen = true
         }
 
         nativeEvent.stopPropagation()
       },
       updateRange ({ start, end }) {
-        const events = []
+        console.log(start,end)
+        const events = [
+          {
+            name: "Coding",
+            start: new Date('December 12, 2021 20:30:00'),
+            end: new Date('December 12, 2021 21:30:00'),
+            color: "blue",
+            timed: false,
+            details:"yes",
+            friends:["ali",'jamal']
 
-        const min = new Date(`${start.date}T00:00:00`)
-        const max = new Date(`${end.date}T23:59:59`)
-        const days = (max.getTime() - min.getTime()) / 86400000
-        const eventCount = this.rnd(days, days + 20)
 
-        for (let i = 0; i < eventCount; i++) {
-          const allDay = this.rnd(0, 3) === 0
-          const firstTimestamp = this.rnd(min.getTime(), max.getTime())
-          const first = new Date(firstTimestamp - (firstTimestamp % 900000))
-          const secondTimestamp = this.rnd(2, allDay ? 288 : 8) * 900000
-          const second = new Date(first.getTime() + secondTimestamp)
+          }
+        ]
 
-          events.push({
-            name: this.names[this.rnd(0, this.names.length - 1)],
-            start: first,
-            end: second,
-            color: this.colors[this.rnd(0, this.colors.length - 1)],
-            timed: !allDay,
-          })
-        }
 
         this.events = events
-      },
-      rnd (a, b) {
-        return Math.floor((b - a + 1) * Math.random()) + a
       },
     },
   }
